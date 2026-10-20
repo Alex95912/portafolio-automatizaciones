@@ -1,0 +1,94 @@
+{
+  "name": "DEMO Clase 6 - Carga para modo cola",
+  "nodes": [
+    {
+      "id": "1842aa71-aba0-4b39-9bde-293bd313bd3b",
+      "name": "Recibir pedido",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "carga-demo",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "0dc88ad2-792a-4009-ba8f-d2cc181fc009"
+    },
+    {
+      "id": "285dc026-7066-4b7f-8da1-8bdc632f1a75",
+      "name": "Simular procesamiento",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "webhookId": "bc9ca9ed-4d38-47cf-b182-6c3631b1296d"
+    },
+    {
+      "id": "5687ef38-a585-4715-ae00-8533d884b30b",
+      "name": "Registrar pedido",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "be2ec992-94b8-4083-84ed-c364bbb4b1c4",
+              "name": "pedido",
+              "value": "={{ $('Recibir pedido').item.json.body.pedido }}",
+              "type": "string"
+            },
+            {
+              "id": "cbe4693e-e19a-4732-b8e9-5ad1b51ca270",
+              "name": "procesado_en",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Recibir pedido": {
+      "main": [
+        [
+          {
+            "node": "Simular procesamiento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simular procesamiento": {
+      "main": [
+        [
+          {
+            "node": "Registrar pedido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

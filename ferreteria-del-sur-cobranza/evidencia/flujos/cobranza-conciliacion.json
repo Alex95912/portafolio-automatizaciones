@@ -1,0 +1,95 @@
+{
+  "name": "DEMO Clase 6 - Consulta con credencial",
+  "nodes": [
+    {
+      "id": "a2acd562-c7bd-4de7-a7fe-bdf610791931",
+      "name": "Ejecutar a mano",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "2a1f694d-09aa-4541-a106-05de6c2b316b",
+      "name": "Consultar API de prueba",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "url": "https://httpbin.org/headers",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "API Demo (header)"
+        }
+      }
+    },
+    {
+      "id": "b390f536-14c1-41c2-8349-dbe77071f06b",
+      "name": "Marcar resultado",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "82131d22-a799-404e-b3f7-c4895c8945a4",
+              "name": "estado",
+              "value": "consulta_ok",
+              "type": "string"
+            },
+            {
+              "id": "587765a1-0377-4f9f-a00e-d5e269d826a3",
+              "name": "header_enviado",
+              "value": "={{ $json.headers['X-Api-Key'] ? 'si' : 'no' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Ejecutar a mano": {
+      "main": [
+        [
+          {
+            "node": "Consultar API de prueba",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar API de prueba": {
+      "main": [
+        [
+          {
+            "node": "Marcar resultado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

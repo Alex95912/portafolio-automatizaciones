@@ -1,0 +1,173 @@
+{
+  "name": "Rumbo Sur - Alerta de consumo del cupo",
+  "nodes": [
+    {
+      "id": "3616d060-8811-4e2c-a3bd-31e4be884385",
+      "name": "Todos los días a las 9",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "f3ff7645-459d-46e3-a56c-8ee391e504ea",
+      "name": "Leer registro de ejecuciones",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "COMPLETAR_URL_DE_LA_HOJA"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "registro"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets (completar)"
+        }
+      }
+    },
+    {
+      "id": "be08f55b-a92b-4ad2-97b6-2ecf30c5100b",
+      "name": "Calcular proyección de fin de mes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const filas = $input.all().map(i => i.json);\nconst cupo = 10000;\n\n// La fecha puede llegar como texto o como fecha, segun como haya quedado la hoja.\nconst dia = f => (f.fecha instanceof Date ? f.fecha.toISOString() : String(f.fecha)).slice(0, 10);\n\nconst ultimo = filas.reduce((m, f) => (dia(f) > m ? dia(f) : m), '');\nconst [anio, mes, diaTxt] = ultimo.split('-');\nconst delMes = filas.filter(f => dia(f).startsWith(`${anio}-${mes}`));\nconst usadas = delMes.reduce((s, f) => s + Number(f.ejecuciones), 0);\nconst diaDeHoy = Number(diaTxt);\nconst diasDelMes = new Date(Number(anio), Number(mes), 0).getDate();\nconst proyeccion = Math.round((usadas / diaDeHoy) * diasDelMes);\n\nconst porFlujo = {};\ndelMes.forEach(f => { porFlujo[f.flujo] = (porFlujo[f.flujo] || 0) + Number(f.ejecuciones); });\nconst principales = Object.entries(porFlujo).sort((a, b) => b[1] - a[1]).slice(0, 2)\n  .map(([f, n]) => `${f}: ${n}`).join(' | ');\n\nconst porcentaje = Math.round((proyeccion / cupo) * 100);\nconst nivel = proyeccion > cupo ? 'urgente' : (proyeccion > 0.8 * cupo ? 'preventivo' : 'ok');\n\nreturn [{ json: { usadas, dia: diaDeHoy, diasDelMes, proyeccion, porcentaje, nivel, principales } }];"
+      }
+    },
+    {
+      "id": "7cefe0ae-89aa-4977-81df-5ea1610a7c65",
+      "name": "¿Hay que avisar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "753c63e3-0c64-4b70-a5ee-09e6a31318c9",
+              "leftValue": "={{ $json.nivel }}",
+              "rightValue": "ok",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b54de5f5-6cb0-4fd3-a232-90fee969d358",
+      "name": "Avisar al responsable del plan",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        -80
+      ],
+      "parameters": {
+        "sendTo": "COMPLETAR_EMAIL_DEL_RESPONSABLE",
+        "subject": "=[{{ $json.nivel.toUpperCase() }}] Cupo de n8n: proyección {{ $json.porcentaje }}% a fin de mes",
+        "message": "=Al día {{ $json.dia }} se usaron {{ $json.usadas }} ejecuciones. Al ritmo actual, el mes cierra en {{ $json.proyeccion }} ({{ $json.porcentaje }}% del cupo de 10.000). Flujos que más aportan: {{ $json.principales }}. Ver el runbook, sección Alertas y respuesta.",
+        "options": {}
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "Gmail (completar)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Todos los días a las 9": {
+      "main": [
+        [
+          {
+            "node": "Leer registro de ejecuciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer registro de ejecuciones": {
+      "main": [
+        [
+          {
+            "node": "Calcular proyección de fin de mes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular proyección de fin de mes": {
+      "main": [
+        [
+          {
+            "node": "¿Hay que avisar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Hay que avisar?": {
+      "main": [
+        [
+          {
+            "node": "Avisar al responsable del plan",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

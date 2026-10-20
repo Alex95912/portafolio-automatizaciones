@@ -1,0 +1,28 @@
+RUNBOOK - Cobranza Ferreteria Del Sur
+
+1. PROPOSITO Y ALCANCE
+Concilia los pagos recibidos contra las cuentas corrientes de las tres sucursales y envia
+los recordatorios de saldo vencido.
+No hace: no registra pagos en el sistema contable y no modifica limites de credito.
+
+2. DEPENDENCIAS
+- Google Sheets (planilla de cuentas corrientes). Credencial: "Sheets - Ferreteria Del Sur".
+- Correo saliente. Credencial: "Gmail - Ferreteria Del Sur".
+- Instancia: n8n en la nube, plan Pro.
+
+3. OPERACION NORMAL
+Conciliacion por lote cada hora, unas 2.400 ejecuciones por mes.
+Una ejecucion correcta termina en verde y deja una fila en la hoja de conciliados.
+
+4. ALERTAS Y RESPUESTA
+ALERTA: "Error en cobranza" por correo cuando un subflujo falla dos veces seguidas.
+Que revisar primero: el panel de ejecuciones, filtrando por el subflujo del asunto.
+Que hacer: si es la credencial, rotarla; si es la planilla, avisar a administracion.
+
+5. PROCEDIMIENTOS
+Rotar la credencial de Sheets: generar la clave nueva, pegarla en n8n, ejecutar a mano una
+vez, y recien ahi revocar la vieja.
+
+6. ESCALAMIENTO
+A quien: responsable tecnico de la cuenta. Canal: soporte del equipo. Horario: 9 a 18.
+Antes de escalar, tener el ID de la ejecucion, la hora y el mensaje de error completo.
